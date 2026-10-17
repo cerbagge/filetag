@@ -6,7 +6,8 @@ APP_DIR = Path(os.environ.get("FILETAG_HOME") or Path(os.environ.get("LOCALAPPDA
 DB_PATH = APP_DIR / "filetag.db"
 MODELS_DIR = APP_DIR / "models"
 EMBED_MODEL_DIR = MODELS_DIR / "embed"
-LLM_MODEL_DIR = MODELS_DIR / "llm"
+# 직접 변환한 NPU용 모델 등을 쓰려면 FILETAG_LLM_DIR로 지정한다
+LLM_MODEL_DIR = Path(os.environ.get("FILETAG_LLM_DIR") or MODELS_DIR / "llm")
 
 # 본문은 앞부분만 저장/분석한다 (DB 크기와 모델 입력 길이 제한)
 MAX_CONTENT_CHARS = 20000

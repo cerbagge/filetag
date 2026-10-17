@@ -34,12 +34,24 @@ py -3.12 -m venv .venv
 | 임베딩(의미 검색) | `OpenVINO/Qwen3-Embedding-0.6B-int4-cw-ov` | NPU ✅ |
 | LLM(태그·정리 제안) | `OpenVINO/Qwen3-1.7B-int4-ov` | NPU ❌ → CPU |
 
-Intel NPU는 **대칭·채널 단위 int4** 모델만 컴파일됩니다. 배포된 `Qwen3-1.7B-int4-ov`는 비대칭 그룹 양자화라
-NPU 컴파일에 실패하고 CPU로 자동 전환됩니다. LLM을 NPU에서 돌리려면 직접 변환합니다 (torch 포함 별도 환경 권장):
+Intel NPU(Meteor Lake)는 **대칭 int4** 모델만 컴파일됩니다. 배포된 `Qwen3-1.7B-int4-ov`는 비대칭 양자화라
+NPU 컴파일에 실패하고 CPU로 자동 전환됩니다 (태그 제안 약 5초).
+
+직접 대칭 양자화로 변환하면 NPU에서 돌지만, 1.7B 모델은 품질이 실사용 수준 아래로 떨어집니다 (2026-10-17 측정):
+
+| LLM 구성 | 장치 | 결과 |
+|---|---|---|
+| 배포본 (비대칭 int4) | CPU | 태그·과목별 정리 모두 정확, 약 5초 |
+| 변환 (대칭 채널 int4) | NPU | 태그 2.7초로 빠르나 긴 프롬프트에서 출력 깨짐 |
+| 변환 (대칭 group128) | NPU | 폴더 이름 품질 낮음 ("공학/고사/회로"), 27초 |
+
+NPU용 변환 방법 (경로가 길면 DLL 로드에 실패하므로 짧은 경로의 별도 환경 사용):
 ```powershell
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install "optimum-intel[openvino]" nncf
-optimum-cli export openvino --model Qwen/Qwen3-1.7B --task text-generation-with-past --weight-format int4 --sym --ratio 1.0 --group-size -1 "$env:LOCALAPPDATA\FileTag\models\llm"
+py -3.12 -m venv $env:LOCALAPPDATA\FileTag\cv
+& $env:LOCALAPPDATA\FileTag\cv\Scripts\pip install torch --index-url https://download.pytorch.org/whl/cpu
+& $env:LOCALAPPDATA\FileTag\cv\Scripts\pip install "optimum-intel[openvino]" nncf
+& $env:LOCALAPPDATA\FileTag\cv\Scripts\optimum-cli export openvino --model Qwen/Qwen3-1.7B --task text-generation-with-past --weight-format int4 --sym --ratio 1.0 --group-size -1 "$env:LOCALAPPDATA\FileTag\models\llm-npu"
+$env:FILETAG_LLM_DIR = "$env:LOCALAPPDATA\FileTag\models\llm-npu"   # 이 모델로 실행
 ```
 첫 실행은 NPU 컴파일로 1분 정도 걸리며, 결과가 `models\cache`에 저장되어 다음부터 빨라집니다.
 
