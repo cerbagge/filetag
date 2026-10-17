@@ -1,0 +1,10 @@
+PySide6
+openvino>=2026.4
+openvino-genai>=2026.4
+openvino-tokenizers>=2026.4
+numpy
+pypdf
+python-docx
+olefile
+huggingface_hub
+pytest
